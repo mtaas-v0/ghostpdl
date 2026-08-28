@@ -29,10 +29,14 @@ jobs:
       - name: Build GhostPDL with NMake
         shell: cmd
         run: |
-          :: DONT_HAVE_SSE2=1 disables x86/x64 SSE2 intrinsics on ARM64
-          :: TARGET_ARCH_FILE specifies the LLP64 Windows architecture configuration
-          nmake -f psi\msvc.mak WIN64= DONT_HAVE_SSE2=1 TARGET_ARCH_FILE=arch\windows-x64-msvc.h MAKEDLL=1
-
+          nmake -f psi\msvc.mak ^
+            DEVSTUDIO= ^
+            RCOMP=rc.exe ^
+            DONT_HAVE_SSE2=1 ^
+            WIN64= ^
+            TARGET_ARCH_FILE=arch\windows-x64-msvc.h ^
+            MAKEDLL=1
+            
       - name: Collect MSVC Artifacts
         shell: cmd
         run: |
