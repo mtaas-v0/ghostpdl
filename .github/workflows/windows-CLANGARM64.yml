@@ -1,6 +1,9 @@
 name: Build GhostPDL for Windows ARM64
 
 on:
+  push:
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
@@ -44,8 +47,7 @@ jobs:
             --without-x \
             --disable-cups \
             --disable-dbus \
-            --disable-gtk \
-            --enable-dynamic
+            --disable-gtk 
 
       - name: Build GhostPDL & Ghostscript
         run: |
@@ -65,44 +67,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ghostpdl-win-arm64-clang
-          path: dist/
-
-  # ----------------------------------------------------------------------
-  # Job 2: Cross-compile using MSVC (x64_arm64 NMake)
-  # Uses Microsoft Visual Studio C++ Compiler targeting ARM64
-  # ----------------------------------------------------------------------
-  build-msvc-arm64:
-    name: Build (MSVC NMake ARM64)
-    runs-on: windows-11-arm
-    steps:
-      - name: Checkout GhostPDL repository
-        uses: actions/checkout@v4
-        with:
-          submodules: recursive
-          fetch-depth: 1
-
-      - name: Setup MSVC Cross-Compile Environment (x64 -> ARM64)
-        uses: ilammy/msvc-dev-cmd@v1
-        with:
-          arch: x64_arm64
-
-      - name: Build GhostPDL with NMake
-        shell: cmd
-        run: |
-          :: Use psi\msvc.mak with WIN64 and the target arch header
-          nmake -f psi\msvc.mak WIN64= TARGET_ARCH_FILE=arch\windows-x64-msvc.h MAKEDLL=1
-
-      - name: Collect MSVC Artifacts
-        shell: cmd
-        run: |
-          mkdir dist\bin
-          mkdir dist\lib
-          if exist bin\*.exe copy bin\*.exe dist\bin\
-          if exist bin\*.dll copy bin\*.dll dist\bin\
-          if exist bin\*.lib copy bin\*.lib dist\lib\
-
-      - name: Upload Binaries (MSVC ARM64)
-        uses: actions/upload-artifact@v4
-        with:
-          name: ghostpdl-win-arm64-msvc
           path: dist/
