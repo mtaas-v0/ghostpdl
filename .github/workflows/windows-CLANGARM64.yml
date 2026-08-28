@@ -24,7 +24,7 @@ jobs:
   # ----------------------------------------------------------------------
   build-msys2-clangarm64:
     name: Build (MSYS2 Clang-ARM64)
-    runs-on: windows-11-arm
+    runs-on: windows-lastest
     defaults:
       run:
         shell: msys2 {0}
@@ -52,10 +52,10 @@ jobs:
       - name: Configure GhostPDL
         run: |
           # It only switches to static if explicitly passed as 'static'
-          if [ "${{ inputs.enable_dynamic_driver }}" == "static" ]; then
-            DRIVER_FLAGS="--disable-dynamic"
-          else
+          if [ "${{ inputs.driver_mode }}" == "dynamic" ]; then
             DRIVER_FLAGS="--enable-dynamic --disable-hidden-visibility"
+          else
+            DRIVER_FLAGS="--disable-dynamic"
           fi
 
           echo "Using flags: $DRIVER_FLAGS"
