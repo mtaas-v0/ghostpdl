@@ -447,7 +447,9 @@ static int zdelaybindparam(i_ctx_t *i_ctx_p)
         return_error(gs_error_rangecheck);
 
     for (i=0;i < 2;i++) {
-        code = gs_alloc_ref_array(imemory_local, (ref *)op, a_all, size, "zdelaybindparam");
+//        code = gs_alloc_ref_array(imemory_local, (ref *)op, a_all, size, "zdelaybindparam");
+       
+        code = gs_alloc_ref_array(iimemory_local, (ref *)op, a_all, size, "zdelaybindparam");
         if (code < 0)
             return code;
 
