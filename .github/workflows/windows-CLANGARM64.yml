@@ -24,7 +24,7 @@ jobs:
   # ----------------------------------------------------------------------
   build-msys2-clangarm64:
     name: Build (MSYS2 Clang-ARM64)
-    runs-on: windows-lastest
+    runs-on: windows-latest
     defaults:
       run:
         shell: msys2 {0}
