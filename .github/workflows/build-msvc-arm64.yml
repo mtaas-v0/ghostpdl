@@ -28,6 +28,7 @@ jobs:
 
       # Extract the nearest tag name, current timestamp, and run number
       - name: Generate Artifact Meta
+        shell: cmd
         id: meta
         run: |
           # Get nearest tag name (or fallback to short commit SHA if no tag exists)
@@ -52,28 +53,73 @@ jobs:
             TARGET_ARCH_FILE=arch\windows-x64-msvc.h ^
             MAKEDLL=1
             
-      - name: Package Complete Distribution (Binaries + Libs + Resources)
-        shell: cmd
+      - name: Package Complete Distribution
+        shell: pwsh
         run: |
-          :: 1. Create standard distribution structure
-          mkdir dist\bin
-          mkdir dist\lib
-          mkdir dist\Resource
-          mkdir dist\iccprofiles
+          # 1. Create directories
+          New-Item -ItemType Directory -Force -Path dist/bin, dist/lib, dist/Resource, dist/iccprofiles
 
-          :: 2. Copy compiled ARM64 binaries and DLLs
-          copy bin\*.exe dist\bin\
-          copy bin\*.dll dist\bin\
-          copy bin\*.lib dist\bin\
+          # 2. Copy compiled ARM64 binaries and DLLs
+          Copy-Item bin/*.exe dist/bin/ -Force
+          Copy-Item bin/*.dll dist/bin/ -Force
+          Copy-Item bin/*.lib dist/lib/ -Force
 
-          :: 3. Copy ps2pdf.bat, wrapper scripts, and PostScript runtime libs
-          xcopy /E /I /Y lib dist\lib
+          # 3. Copy PostScript runtime, font maps, and ICC profiles
+          Copy-Item -Recurse lib/* dist/lib/ -Force
+          Copy-Item -Recurse Resource/* dist/Resource/ -Force
+          Copy-Item -Recurse iccprofiles/* dist/iccprofiles/ -Force
 
-          :: 4. Copy standard font maps, CMaps, and resource tables
-          xcopy /E /I /Y Resource dist\Resource
+          # 4. Generate 'load-env.bat' (For CMD)
+          $loadEnvBat = @'
+          @echo off
+          set "GS_ROOT=%~dp0"
+          if "%GS_ROOT:~-1%"=="\" set "GS_ROOT=%GS_ROOT:~0,-1%"
 
-          :: 5. Copy standard ICC color profiles
-          xcopy /E /I /Y iccprofiles dist\iccprofiles
+          set "PATH=%GS_ROOT%\bin;%GS_ROOT%\lib;%PATH%"
+          set "GS_LIB=%GS_ROOT%\lib;%GS_ROOT%\Resource\Init;%GS_ROOT%\Resource\Font"
+          set "GS_FONTPATH=%SystemRoot%\Fonts"
+          set "GS_ICC_PROFILES=%GS_ROOT%\iccprofiles"
+
+          echo ============================================================
+          echo  Ghostscript Windows ARM64 Environment Initialized (CMD)
+          echo ============================================================
+          echo  GS_ROOT     : %GS_ROOT%
+          echo  PATH        : Added bin\ and lib\
+          echo  GS_FONTPATH : %GS_FONTPATH%
+          echo  Commands    : gswin64c, ps2pdf, pdf2ps, ps2ascii
+          echo ============================================================
+          echo.
+
+          :: If double-clicked directly in Windows Explorer, launch an interactive shell
+          if /i "%comspec% /c ``%~0` `" equ "%cmdcmdline%" (
+              cmd.exe /k
+          )
+          '@
+          $loadEnvBat | Out-File -FilePath "dist/load-env.bat" -Encoding ascii
+
+          # 5. Generate 'run-powershell-with-env.bat' (For PowerShell)
+          $runPsBat = @'
+          @echo off
+          set "GS_ROOT=%~dp0"
+          if "%GS_ROOT:~-1%"=="\" set "GS_ROOT=%GS_ROOT:~0,-1%"
+
+          set "PATH=%GS_ROOT%\bin;%GS_ROOT%\lib;%PATH%"
+          set "GS_LIB=%GS_ROOT%\lib;%GS_ROOT%\Resource\Init;%GS_ROOT%\Resource\Font"
+          set "GS_FONTPATH=%SystemRoot%\Fonts"
+          set "GS_ICC_PROFILES=%GS_ROOT%\iccprofiles"
+
+          powershell.exe -NoExit -ExecutionPolicy Bypass -Command ^
+            "Write-Host '============================================================' -ForegroundColor Green; " ^
+            "Write-Host ' Ghostscript Windows ARM64 Environment Initialized (PowerShell)' -ForegroundColor Green; " ^
+            "Write-Host '============================================================' -ForegroundColor Green; " ^
+            "Write-Host \" GS_ROOT     : $env:GS_ROOT\"; " ^
+            "Write-Host \" GS_FONTPATH : $env:GS_FONTPATH\"; " ^
+            "Set-Alias -Name gs -Value gswin64c.exe -Scope Global -ErrorAction SilentlyContinue; " ^
+            "Write-Host ' Available  : gs, gswin64c, ps2pdf, pdf2ps, ps2ascii' -ForegroundColor Cyan; " ^
+            "Write-Host '============================================================`n' -ForegroundColor Green"
+          '@
+          $runPsBat | Out-File -FilePath "dist/run-powershell-with-env.bat" -Encoding ascii
+
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
