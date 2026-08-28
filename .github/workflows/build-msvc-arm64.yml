@@ -26,6 +26,21 @@ jobs:
         with:
           arch: x64_arm64
 
+      # Extract the nearest tag name, current timestamp, and run number
+      - name: Generate Artifact Meta
+        id: meta
+        run: |
+          # Get nearest tag name (or fallback to short commit SHA if no tag exists)
+          TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "no-tag-${GITHUB_SHA::7}")
+          
+          # Format current datetime (Example: 20260828-0012)
+          DATETIME=$(date +'%Y%m%d-%H%M')
+          
+          # Combine Tag, Datetime, and the GitHub Run Number
+          # Resulting format: v1.2.3_20260828-0012_run-42
+          echo "ARTIFACT_NAME=${TAG}_${DATETIME}_run-${{ github.run_number }}" >> $GITHUB_ENV
+
+
       - name: Build GhostPDL with NMake
         shell: cmd
         run: |
@@ -37,17 +52,31 @@ jobs:
             TARGET_ARCH_FILE=arch\windows-x64-msvc.h ^
             MAKEDLL=1
             
-      - name: Collect MSVC Artifacts
+      - name: Package Complete Distribution (Binaries + Libs + Resources)
         shell: cmd
         run: |
+          :: 1. Create standard distribution structure
           mkdir dist\bin
           mkdir dist\lib
-          if exist bin\*.exe copy bin\*.exe dist\bin\
-          if exist bin\*.dll copy bin\*.dll dist\bin\
-          if exist bin\*.lib copy bin\*.lib dist\lib\
+          mkdir dist\Resource
+          mkdir dist\iccprofiles
+
+          :: 2. Copy compiled ARM64 binaries and DLLs
+          copy bin\*.exe dist\bin\
+          copy bin\*.dll dist\bin\
+          copy bin\*.lib dist\bin\
+
+          :: 3. Copy ps2pdf.bat, wrapper scripts, and PostScript runtime libs
+          xcopy /E /I /Y lib dist\lib
+
+          :: 4. Copy standard font maps, CMaps, and resource tables
+          xcopy /E /I /Y Resource dist\Resource
+
+          :: 5. Copy standard ICC color profiles
+          xcopy /E /I /Y iccprofiles dist\iccprofiles
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: ghostpdl-windows-arm64-msvc
+          name: ${{ env.ARTIFACT_NAME }}
           path: dist/
