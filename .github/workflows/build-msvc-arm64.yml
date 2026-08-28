@@ -1,4 +1,4 @@
-name: Build GhostPDL for Windows ARM64
+name: Build GhostPDL for Windows ARM64 / MSVC only
 
 on:
   push:
@@ -13,7 +13,7 @@ jobs:
   # ---------------------------------------------------------
   build-msvc-arm64:
     name: Build (MSVC ARM64)
-    runs-on: windows-latest
+    runs-on: windows-11=arm
     steps:
       - name: Checkout GhostPDL
         uses: actions/checkout@v4
