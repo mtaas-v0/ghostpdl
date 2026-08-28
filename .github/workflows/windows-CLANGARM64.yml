@@ -4,7 +4,18 @@ on:
   push:
     branches:
       - main
+      - master
+      
   workflow_dispatch:
+    inputs:
+      driver_mode:
+        description: 'Driver configuration mode'
+        type: choice
+        required: true
+        default: 'dynamic'
+        options:
+          - 'dynamic'
+          - 'static'
 
 jobs:
   # ----------------------------------------------------------------------
@@ -40,6 +51,15 @@ jobs:
 
       - name: Configure GhostPDL
         run: |
+          # It only switches to static if explicitly passed as 'static'
+          if [ "${{ inputs.enable_dynamic_driver }}" == "static" ]; then
+            DRIVER_FLAGS="--disable-dynamic"
+          else
+            DRIVER_FLAGS="--enable-dynamic --disable-hidden-visibility"
+          fi
+
+          echo "Using flags: $DRIVER_FLAGS"
+          
           ./autogen.sh
           ./configure \
             --host=aarch64-w64-mingw32 \
@@ -47,7 +67,8 @@ jobs:
             --without-x \
             --disable-cups \
             --disable-dbus \
-            --disable-gtk 
+            --disable-gtk \
+            $DRIVER_FLAGS 
 
       - name: Build GhostPDL & Ghostscript
         run: |
