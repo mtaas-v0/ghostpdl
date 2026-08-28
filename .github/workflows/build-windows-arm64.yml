@@ -16,7 +16,7 @@ jobs:
   # ----------------------------------------------------------------------
   build-msys2-clangarm64:
     name: Build (MSYS2 Clang-ARM64)
-    runs-on: windows-latest
+    runs-on: windows-11-arm
     defaults:
       run:
         shell: msys2 {0}
@@ -79,7 +79,7 @@ jobs:
   # ----------------------------------------------------------------------
   build-msvc-arm64:
     name: Build (MSVC NMake ARM64)
-    runs-on: windows-latest
+    runs-on: windows-11-arm
     steps:
       - name: Checkout GhostPDL repository
         uses: actions/checkout@v4
