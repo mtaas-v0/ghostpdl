@@ -1,10 +1,6 @@
 name: Build GhostPDL for Windows ARM64 / MSVC only
 
 on:
-  push:
-    branches: [ master, main ]
-  pull_request:
-    branches: [ master, main ]
   workflow_dispatch:
 
 jobs:
