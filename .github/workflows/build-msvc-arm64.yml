@@ -1,0 +1,49 @@
+name: Build GhostPDL for Windows ARM64
+
+on:
+  push:
+    branches: [ master, main ]
+  pull_request:
+    branches: [ master, main ]
+  workflow_dispatch:
+
+jobs:
+  # ---------------------------------------------------------
+  # MSVC ARM64 Build
+  # ---------------------------------------------------------
+  build-msvc-arm64:
+    name: Build (MSVC ARM64)
+    runs-on: windows-latest
+    steps:
+      - name: Checkout GhostPDL
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 1
+
+      - name: Setup MSVC Cross-Compile Environment (x64 -> ARM64)
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64_arm64
+
+      - name: Build GhostPDL with NMake
+        shell: cmd
+        run: |
+          :: DONT_HAVE_SSE2=1 disables x86/x64 SSE2 intrinsics on ARM64
+          :: TARGET_ARCH_FILE specifies the LLP64 Windows architecture configuration
+          nmake -f psi\msvc.mak WIN64= DONT_HAVE_SSE2=1 TARGET_ARCH_FILE=arch\windows-x64-msvc.h MAKEDLL=1
+
+      - name: Collect MSVC Artifacts
+        shell: cmd
+        run: |
+          mkdir dist\bin
+          mkdir dist\lib
+          if exist bin\*.exe copy bin\*.exe dist\bin\
+          if exist bin\*.dll copy bin\*.dll dist\bin\
+          if exist bin\*.lib copy bin\*.lib dist\lib\
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ghostpdl-windows-arm64-msvc
+          path: dist/
